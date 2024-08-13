@@ -38,7 +38,7 @@ public class RentalAgreementCalculatorTest {
             assertEquals(10, resultAgreement.getRentalDays());
             assertEquals(10, resultAgreement.getDiscountPercent());
             assertEquals(LocalDate.of(2024, 1, 1),resultAgreement.getCheckoutDate());
-            assertEquals(LocalDate.of(2024, 1, 10),resultAgreement.getDueDate());
+            assertEquals(LocalDate.of(2024, 1, 11),resultAgreement.getDueDate());
             assertEquals(BigDecimal.valueOf(10.00), resultAgreement.getPreDiscountCharge().setScale(1, RoundingMode.CEILING));
             assertEquals(BigDecimal.valueOf(1.00), resultAgreement.getDiscountAmount().setScale(1, RoundingMode.CEILING));
             assertEquals(BigDecimal.valueOf(9.00), resultAgreement.getFinalCharge().setScale(1, RoundingMode.CEILING));
