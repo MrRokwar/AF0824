@@ -32,7 +32,8 @@ public class RentalAgreementCalculator {
             throw new InvalidRentalAgreementException("Invalid Date");
         }
 
-        LocalDate dueDate = rentalAgreement.getCheckoutDate().plus(Period.ofDays(rentalAgreement.getRentalDays()));
+        //Need to count the first day as a rental day so removing one day off the end
+        LocalDate dueDate = rentalAgreement.getCheckoutDate().plus(Period.ofDays(rentalAgreement.getRentalDays()-1));
         rentalAgreement.setDueDate(dueDate);
         //This could be done as a generic method on the individual tools, but I decided to keep them as exclusively model classes and move the logic into this calculator
         rentalAgreement.setChargeDays(switch (rentalAgreement.getToolType()){
@@ -72,7 +73,11 @@ public class RentalAgreementCalculator {
 
     public int calculatePaidDaysMinusCertainDates(LocalDate checkoutDate, LocalDate dueDate, List<LocalDate> ignoredDates){
         //adding 1 day because datesUntil is exclusive instead of inclusive
-        return (int) checkoutDate.datesUntil(dueDate.plusDays(1)).filter(totalDays -> !ignoredDates.contains(totalDays)).count();
+        if(ignoredDates == null){
+            return (int) checkoutDate.datesUntil(dueDate.plusDays(1)).count();
+        }else {
+            return (int) checkoutDate.datesUntil(dueDate.plusDays(1)).filter(totalDays -> !ignoredDates.contains(totalDays)).count();
+        }
     }
 
     public List<LocalDate> calculateHolidayDatesForDateRange(LocalDate checkoutDate, LocalDate dueDate){
@@ -80,10 +85,17 @@ public class RentalAgreementCalculator {
         List<LocalDate> totalDays = checkoutDate.datesUntil(dueDate.plusDays(1)).toList();
         List<LocalDate> holidaysInDate = new ArrayList<>();
         //4th of July
-        holidaysInDate.addAll(totalDays.stream().filter(currentDate -> currentDate.getMonth() == Month.JULY && currentDate.getDayOfMonth() == 4).map(fourthOfJuly -> fourthOfJuly.with(new MoveToClosestWeekdayAdjustor())).toList());
+        holidaysInDate.addAll(totalDays.stream()
+                .filter(currentDate -> currentDate.getMonth() == Month.JULY &&
+                        (currentDate.getDayOfMonth() == 4 || (currentDate.getDayOfMonth() == 3 && currentDate.getDayOfWeek() == DayOfWeek.FRIDAY) || (currentDate.getDayOfMonth() == 5 && currentDate.getDayOfWeek() == DayOfWeek.MONDAY)))
+                .map(fourthOfJuly -> fourthOfJuly.with(new MoveToClosestWeekdayAdjustor()))
+                .distinct()
+                .toList());
 
         //Labor Day
-        holidaysInDate.addAll(totalDays.stream().filter(currentDate -> currentDate.getMonth() == Month.SEPTEMBER && (currentDate.getDayOfYear() == currentDate.with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY)).getDayOfYear())).toList());
+        holidaysInDate.addAll(totalDays.stream()
+                .filter(currentDate -> currentDate.getMonth() == Month.SEPTEMBER && (currentDate.getDayOfYear() == currentDate.with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY)).getDayOfYear()))
+                .toList());
 
         return holidaysInDate;
     }
